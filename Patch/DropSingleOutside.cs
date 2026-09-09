@@ -1,55 +1,23 @@
 using HarmonyLib;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DropSingleItem.Patch
 {
-    [HarmonyPatch(typeof(InventoryGui), "Awake")]
-    class InventoryGui_Awake
+    [HarmonyPatch(typeof(InventoryGui), "Update")]
+    class InventoryGui_Update_DropSingleOutside
     {
-        public static void Postfix(InventoryGui __instance, Button ___m_dropButton)
+        public static void Postfix(InventoryGui __instance)
         {
-            if (___m_dropButton == null)
+            if (!InventoryGui.IsVisible() || __instance.dragGo() == null)
                 return;
 
-            ___m_dropButton.gameObject.AddComponent<RightClickButtonComponent>().OnRightClick.AddListener(() => OnDropSingleOutside(__instance));
-        }
-
-        static void OnDropSingleOutside(InventoryGui __instance)
-        {
-            if (!__instance.dragGo())
+            if (!ZInput.GetMouseButtonDown(1))
                 return;
 
-            var dragItem = __instance.dragItem();
-            var dragInventory = __instance.dragInventory();
-            if (dragItem == null || dragInventory == null || Player.m_localPlayer == null)
+            if (Utils.PointerOverInventoryGrid(__instance))
                 return;
 
-            var dragAmount = __instance.dragAmount();
-            var dragStack = dragItem.m_stack;
-
-            ZLog.Log("Drop single item " + dragItem.m_shared.m_name);
-
-            if (!dragInventory.ContainsItem(dragItem))
-            {
-                __instance.SetupDragItem(null, null, 1);
-            }
-            else if (Player.m_localPlayer.DropItem(dragInventory, dragItem, 1))
-            {
-                Utils.PlayMoveEffects(__instance);
-
-                dragAmount -= dragStack - dragItem.m_stack;
-                if (dragInventory.ContainsItem(dragItem) && dragAmount > 0)
-                {
-                    __instance.SetupDragItem(dragItem, dragInventory, dragAmount);
-                }
-                else
-                {
-                    __instance.SetupDragItem(null, null, 1);
-                }
-
-                __instance.UpdateCraftingPanel();
-            }
+            Utils.DropOneOutside(__instance);
         }
     }
 }

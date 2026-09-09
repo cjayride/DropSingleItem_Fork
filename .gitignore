@@ -5,7 +5,9 @@ lib/
 dist/
 *.user
 *.suo
-_dump_api.cs
-_dump_api.exe
+_dump_*.cs
+_dump_*.exe
+_il_dump*.txt
 _api_dump*.txt
+Mono.Cecil.dll
 cjayride-DropSingleItem-*.zip

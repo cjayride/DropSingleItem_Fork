@@ -1,10 +1,16 @@
+# v1.2.1
+- Verified in-game on Valheim 1.0
+- Shift + right click splits a stack in its slot (no pickup); uses MoveItemToThis so it is not flagged as a cheated item
+- Double left click merges matching stacks into the clicked slot and does not pick them up
+- Place one / drop one keep the remaining stack on the cursor
+
 # v1.2.0
 - Updated for Valheim 1.0 (Unity 6)
 - Build now references Unity assemblies from valheim_Data/Managed
 - BepInEx dependency updated to denikson-BepInExPack_Valheim-5.4.2350
-- Fixed EffectList.Create signature (restores drop-one-outside and grab-full-stack)
-- Updated InventoryGrid.UpdateInventory to the 1.0 (Inventory, Player, ItemData) signature
-- Added null checks around drag-item drop and stack merge
+- Keep the dragged stack on the cursor while right-clicking (ZInput.GetMouseButton in UpdateItemDrag)
+- Place 1 item from a held stack with right click; remaining items stay on the cursor
+- Right click outside the inventory grids drops 1 item from the held stack
 
 # v1.1.1
 - Updated to work with Mistlands

@@ -11,7 +11,7 @@ namespace DropSingleItem.Patch
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            var GetMouseButtonMethod = typeof(Input).GetMethod("GetMouseButton", new System.Type[] { typeof(int) });
+            var GetMouseButtonMethod = typeof(ZInput).GetMethod("GetMouseButton", new System.Type[] { typeof(int) });
 
             var codes = new List<CodeInstruction>(instructions);
             for (var i = 1; i < codes.Count; ++i)

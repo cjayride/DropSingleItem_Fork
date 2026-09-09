@@ -8,12 +8,12 @@ A fork of [TechGuard/DropSingleItem](https://github.com/TechGuard/ValheimMods/tr
 
 Original Nexus page: [Drop Single Item](https://www.nexusmods.com/valheim/mods/731)
 
-## Right click to place one item instead of the whole stack
+## Inventory shortcuts
 
-- Place 1 item from a picked stack by right-clicking inside your inventory.
-- Split half a stack by shift + right-clicking on an item.
-- Drop 1 item on the ground by right-clicking outside your inventory.
-- Grab a full stack by double left-clicking (merges matching items in the inventory).
+- Left click a stack to pick it up. Right click an empty slot (or a matching stack) to place **1 item**. The rest stays on the cursor for the next click.
+- Shift + right click a stack in its slot (do not pick it up first) to split it in half into two inventory slots when there is an empty slot.
+- Right click outside the inventory grids while holding a stack to drop **1 item** on the ground. The rest stays on the cursor.
+- Double left click a stack to merge matching stacks into that slot. Items stay in the inventory; they are not picked up.
 
 ## Configuration
 

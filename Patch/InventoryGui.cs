@@ -11,13 +11,14 @@ namespace DropSingleItem.Patch
             var is_dragging_item = __instance.dragGo() != null;
 
             var default_use_keycode = DropSingleItemMod.InventoryUseItemKeyCode == KeyCode.Mouse1;
-            var shift_split = default_use_keycode && Input.GetKey(KeyCode.LeftShift);
+            var shift_split = default_use_keycode && Utils.IsShiftHeld();
 
             if (!default_use_keycode || shift_split)
             {
                 if (!is_dragging_item && item != null && item.m_stack > 1)
                 {
-                    __instance.SetupDragItem(item, grid.GetInventory(), item.m_stack / 2);
+                    if (Utils.TrySplitStackIntoEmptySlot(grid.GetInventory(), item))
+                        Utils.PlayMoveEffects(__instance);
                     return false;
                 }
 
@@ -44,7 +45,7 @@ namespace DropSingleItem.Patch
             __instance.OnSelectedItem(grid, item, pos, InventoryGrid.Modifier.Select);
 
             dragAmount -= dragStack - dragItem.m_stack;
-            if (dragAmount > 0)
+            if (dragAmount > 0 && dragItem != null && dragInventory != null && dragInventory.ContainsItem(dragItem))
             {
                 __instance.SetupDragItem(dragItem, dragInventory, dragAmount);
             }
@@ -63,9 +64,9 @@ namespace DropSingleItem.Patch
                 return;
             }
 
-            if (Input.GetKeyDown(DropSingleItemMod.InventoryUseItemKeyCode))
+            if (ZInput.GetKeyDown(DropSingleItemMod.InventoryUseItemKeyCode, true))
             {
-                var selected_item = __instance.GetItem(new Vector2i(Input.mousePosition));
+                var selected_item = __instance.GetItem(new Vector2i(ZInput.pointerPosition));
                 if (selected_item != null && Player.m_localPlayer)
                 {
                     Player.m_localPlayer.UseItem(inventory, selected_item, true);

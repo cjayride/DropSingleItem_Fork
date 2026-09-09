@@ -1,6 +1,6 @@
 {
     "name": "DropSingleItem",
-    "version_number": "1.2.0",
+    "version_number": "1.2.1",
     "website_url": "https://github.com/cjayride/DropSingleItem_Fork",
     "description": "Fork of TechGuard/DropSingleItem. Right click to place one item instead of the whole stack. Updated for Valheim 1.0.",
     "dependencies": [

@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+lib/
+dist/
+*.user
+*.suo
+_dump_api.cs
+_dump_api.exe
+_api_dump*.txt
+cjayride-DropSingleItem-*.zip

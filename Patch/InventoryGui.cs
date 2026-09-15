@@ -41,8 +41,16 @@ namespace DropSingleItem.Patch
             var dragAmount = __instance.dragAmount();
             var dragStack = dragItem.m_stack;
 
-            ___m_dragAmount = 1;
-            __instance.OnSelectedItem(grid, item, pos, InventoryGrid.Modifier.Select);
+            Utils.placingOneFromDrag = true;
+            try
+            {
+                ___m_dragAmount = 1;
+                __instance.OnSelectedItem(grid, item, pos, InventoryGrid.Modifier.Select);
+            }
+            finally
+            {
+                Utils.placingOneFromDrag = false;
+            }
 
             dragAmount -= dragStack - dragItem.m_stack;
             if (dragAmount > 0 && dragItem != null && dragInventory != null && dragInventory.ContainsItem(dragItem))

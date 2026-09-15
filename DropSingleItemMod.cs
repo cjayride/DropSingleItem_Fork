@@ -11,7 +11,7 @@ namespace DropSingleItem
     {
         const string NAME = "DropSingleItem";
         const string GUID = "TechGuard.DropSingleItem";
-        const string VERSION = "1.2.1";
+        const string VERSION = "1.2.2";
 
         readonly Harmony harmony = new Harmony(GUID);
 

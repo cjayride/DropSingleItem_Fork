@@ -7,6 +7,8 @@ namespace DropSingleItem.Patch
 {
     class Utils
     {
+        public static bool placingOneFromDrag;
+
         public static bool IsShiftHeld()
         {
             return ZInput.GetKey(KeyCode.LeftShift, true) || ZInput.GetKey(KeyCode.RightShift, true);
@@ -58,7 +60,7 @@ namespace DropSingleItem.Patch
 
         public static void MergeMatchingIntoSlot(InventoryGui gui, Inventory targetInventory, ItemDrop.ItemData target)
         {
-            if (gui == null || targetInventory == null || target == null || Player.m_localPlayer == null)
+            if (gui == null || targetInventory == null || target == null || Player.m_localPlayer == null || placingOneFromDrag)
                 return;
 
             int before = target.m_stack;

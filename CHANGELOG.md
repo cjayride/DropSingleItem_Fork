@@ -1,3 +1,6 @@
+# v1.2.2
+- Fixed right-click place-one sometimes sucking placed items back onto the held stack (double-click merge was firing on rapid right clicks)
+
 # v1.2.1
 - Verified in-game on Valheim 1.0
 - Shift + right click splits a stack in its slot (no pickup); uses MoveItemToThis so it is not flagged as a cheated item

@@ -1,3 +1,6 @@
+# v1.2.3
+- Restored place-one / drop-one (1.2.2 merge hook on InventoryGrid.OnLeftDown could prevent the plugin from patching)
+
 # v1.2.2
 - Fixed right-click place-one sometimes sucking placed items back onto the held stack (double-click merge was firing on rapid right clicks)
 

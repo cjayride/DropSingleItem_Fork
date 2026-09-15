@@ -3,29 +3,31 @@ using UnityEngine;
 
 namespace DropSingleItem.Patch
 {
-    [HarmonyPatch(typeof(InventoryGrid), "OnLeftDown")]
-    class InventoryGrid_OnLeftDown_GrabFullStack
+    [HarmonyPatch(typeof(InventoryGui), "OnSelectedItem")]
+    class InventoryGui_OnSelectedItem_GrabFullStack
     {
         const float DoubleClickThreshold = 0.3f;
 
         static float LastItemClickedTime = -1f;
 
-        public static bool Prefix(InventoryGrid __instance, UIInputHandler handler)
+        public static bool Prefix(InventoryGui __instance, InventoryGrid grid, ItemDrop.ItemData item, Vector2i pos, InventoryGrid.Modifier mod)
         {
-            if (handler == null)
+            if (Utils.placingOneFromDrag)
                 return true;
 
-            Vector2i pos = Traverse.Create(__instance).Method("GetButtonPos", new System.Type[] { typeof(GameObject) }).GetValue<Vector2i>(handler.gameObject);
-            var inventory = __instance.GetInventory();
-            ItemDrop.ItemData item = inventory != null ? inventory.GetItemAt(pos.x, pos.y) : null;
+            if (ZInput.GetMouseButton(1) || ZInput.GetMouseButtonDown(1) || ZInput.GetMouseButtonUp(1))
+                return true;
+
+            if (mod != InventoryGrid.Modifier.Select || item == null || grid == null)
+                return true;
 
             bool doubleClicked = LastItemClickedTime >= 0f && (Time.unscaledTime - LastItemClickedTime) < DoubleClickThreshold;
             LastItemClickedTime = Time.unscaledTime;
 
-            if (!doubleClicked || item == null || InventoryGui.instance == null)
+            if (!doubleClicked)
                 return true;
 
-            Utils.MergeMatchingIntoSlot(InventoryGui.instance, inventory, item);
+            Utils.MergeMatchingIntoSlot(__instance, grid.GetInventory(), item);
             return false;
         }
     }

@@ -11,7 +11,7 @@ namespace DropSingleItem
     {
         const string NAME = "DropSingleItem";
         const string GUID = "TechGuard.DropSingleItem";
-        const string VERSION = "1.2.2";
+        const string VERSION = "1.2.3";
 
         readonly Harmony harmony = new Harmony(GUID);
 
@@ -36,6 +36,7 @@ namespace DropSingleItem
                 "Available KeyCodes can be found here: https://docs.unity3d.com/ScriptReference/KeyCode.html");
 
             harmony.PatchAll();
+            Logger.LogInfo("Loaded " + VERSION + " — Harmony patches applied.");
         }
     }
 }

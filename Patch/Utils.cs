@@ -1,13 +1,13 @@
-using HarmonyLib;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DropSingleItem.Patch
 {
     class Utils
     {
         public static bool placingOneFromDrag;
+
+        static readonly List<ItemDrop.ItemData> mergeBuffer = new List<ItemDrop.ItemData>(16);
 
         public static bool IsShiftHeld()
         {
@@ -39,7 +39,7 @@ namespace DropSingleItem.Patch
 
         public static void PlayMoveEffects(InventoryGui instance)
         {
-            var effects = instance.moveItemEffects();
+            var effects = instance.m_moveItemEffects;
             if (effects == null)
                 return;
             effects.Create(instance.transform.position, Quaternion.identity, null, 1f, -1, ZDOID.None);
@@ -50,7 +50,7 @@ namespace DropSingleItem.Patch
             if (inventory == null || item == null || item.m_stack < 2 || !inventory.HaveEmptySlot())
                 return false;
 
-            Vector2i empty = Traverse.Create(inventory).Method("FindEmptySlot", new System.Type[] { typeof(bool) }).GetValue<Vector2i>(true);
+            Vector2i empty = GameAccess.FindEmptySlot(inventory, true);
             if (empty.x < 0 || empty.y < 0)
                 return false;
 
@@ -65,7 +65,7 @@ namespace DropSingleItem.Patch
 
             int before = target.m_stack;
 
-            var currentContainer = gui.currentContainer();
+            var currentContainer = GameAccess.CurrentContainer(gui);
             if (currentContainer != null)
                 MergeMatchingStacksInto(targetInventory, target, currentContainer.GetInventory());
 
@@ -74,8 +74,8 @@ namespace DropSingleItem.Patch
             if (target.m_stack != before)
                 PlayMoveEffects(gui);
 
-            gui.SetupDragItem(null, null, 1);
-            gui.UpdateCraftingPanel();
+            GameAccess.SetupDragItem(gui, null, null, 1);
+            GameAccess.UpdateCraftingPanel(gui, false);
         }
 
         static void MergeMatchingStacksInto(Inventory targetInventory, ItemDrop.ItemData target, Inventory source)
@@ -83,22 +83,22 @@ namespace DropSingleItem.Patch
             if (source == null || target == null || target.m_shared == null)
                 return;
 
-            List<ItemDrop.ItemData> items = new List<ItemDrop.ItemData>();
-            source.GetAllItems(target.m_shared.m_name, items);
+            mergeBuffer.Clear();
+            source.GetAllItems(target.m_shared.m_name, mergeBuffer);
 
-            while (items.Any() && target.m_stack < target.m_shared.m_maxStackSize)
+            for (int i = mergeBuffer.Count - 1; i >= 0 && target.m_stack < target.m_shared.m_maxStackSize; i--)
             {
-                var item = items.Last();
-                items.RemoveAt(items.Count - 1);
-
+                var item = mergeBuffer[i];
                 if (CanStackItem(target, item))
                     targetInventory.MoveItemToThis(source, item, item.m_stack, target.m_gridPos.x, target.m_gridPos.y);
             }
+
+            mergeBuffer.Clear();
         }
 
         public static bool PointerOverInventoryGrid(InventoryGui gui)
         {
-            return ContainsPointer(gui.playerGrid()) || ContainsPointer(gui.containerGrid());
+            return ContainsPointer(gui.m_playerGrid) || ContainsPointer(gui.ContainerGrid);
         }
 
         static bool ContainsPointer(Component component)
@@ -118,101 +118,140 @@ namespace DropSingleItem.Patch
             return RectTransformUtility.RectangleContainsScreenPoint(rt, ZInput.pointerPosition, cam);
         }
 
+        static ItemDrop lastSingleDrop;
+        static float lastSingleDropTime;
+        const float SingleDropMergeSeconds = 2f;
+        const float SingleDropMergeRange = 4f;
+        const float SingleDropMergeRangeSq = SingleDropMergeRange * SingleDropMergeRange;
+
         public static void DropOneOutside(InventoryGui gui)
         {
-            if (gui == null || gui.dragGo() == null)
+            if (gui == null || GameAccess.DragGo(gui) == null)
                 return;
 
-            var dragItem = gui.dragItem();
-            var dragInventory = gui.dragInventory();
+            var dragItem = GameAccess.DragItem(gui);
+            var dragInventory = GameAccess.DragInventory(gui);
             if (dragItem == null || dragInventory == null || Player.m_localPlayer == null)
                 return;
 
-            var dragAmount = gui.dragAmount();
+            var dragAmount = GameAccess.DragAmount(gui);
             var dragStack = dragItem.m_stack;
 
             if (!dragInventory.ContainsItem(dragItem))
             {
-                gui.SetupDragItem(null, null, 1);
+                GameAccess.SetupDragItem(gui, null, null, 1);
+                return;
+            }
+
+            if (TryAddOneToLastDrop(dragInventory, dragItem))
+            {
+                PlayMoveEffects(gui);
+                FinishDropOneDrag(gui, dragItem, dragInventory, dragAmount, dragStack);
                 return;
             }
 
             if (!Player.m_localPlayer.DropItem(dragInventory, dragItem, 1))
                 return;
 
-            PlayMoveEffects(gui);
+            var drop = FindNewestNearbyDrop(dragItem, Player.m_localPlayer.transform.position);
+            SoftenDropPhysics(drop);
+            RememberSingleDrop(drop);
 
+            PlayMoveEffects(gui);
+            FinishDropOneDrag(gui, dragItem, dragInventory, dragAmount, dragStack);
+        }
+
+        static void FinishDropOneDrag(InventoryGui gui, ItemDrop.ItemData dragItem, Inventory dragInventory, int dragAmount, int dragStack)
+        {
             dragAmount -= dragStack - dragItem.m_stack;
             if (dragInventory.ContainsItem(dragItem) && dragAmount > 0)
-                gui.SetupDragItem(dragItem, dragInventory, dragAmount);
+                GameAccess.SetupDragItem(gui, dragItem, dragInventory, dragAmount);
             else
-                gui.SetupDragItem(null, null, 1);
+                GameAccess.SetupDragItem(gui, null, null, 1);
 
-            gui.UpdateCraftingPanel();
-        }
-    }
-
-    static class InventoryGui_Extensions
-    {
-        public static void SetupDragItem(this InventoryGui instance, ItemDrop.ItemData item, Inventory inventory, int amount)
-        {
-            Traverse.Create(instance).Method("SetupDragItem", new System.Type[] {
-                typeof(ItemDrop.ItemData), typeof(Inventory), typeof(int)
-            }).GetValue(item, inventory, amount);
+            GameAccess.UpdateCraftingPanel(gui, false);
         }
 
-        public static void UpdateCraftingPanel(this InventoryGui instance, bool focusView = false)
+        static bool TryAddOneToLastDrop(Inventory dragInventory, ItemDrop.ItemData dragItem)
         {
-            Traverse.Create(instance).Method("UpdateCraftingPanel", new System.Type[] {
-                typeof(bool)
-            }).GetValue(focusView);
+            if (lastSingleDrop == null || Time.time - lastSingleDropTime > SingleDropMergeSeconds)
+                return false;
+
+            if (lastSingleDrop.m_itemData == null || lastSingleDrop.m_itemData.m_shared == null)
+                return false;
+
+            if (!CanStackItem(lastSingleDrop.m_itemData, dragItem))
+                return false;
+
+            if (lastSingleDrop.m_itemData.m_stack >= lastSingleDrop.m_itemData.m_shared.m_maxStackSize)
+                return false;
+
+            if ((lastSingleDrop.transform.position - Player.m_localPlayer.transform.position).sqrMagnitude > SingleDropMergeRangeSq)
+                return false;
+
+            if (!dragInventory.RemoveItem(dragItem, 1))
+                return false;
+
+            lastSingleDrop.SetStack(lastSingleDrop.m_itemData.m_stack + 1);
+            lastSingleDropTime = Time.time;
+            return true;
         }
 
-        public static void OnSelectedItem(this InventoryGui instance, InventoryGrid grid, ItemDrop.ItemData item, Vector2i pos, InventoryGrid.Modifier mod)
+        static void RememberSingleDrop(ItemDrop drop)
         {
-            Traverse.Create(instance).Method("OnSelectedItem", new System.Type[] {
-                typeof(InventoryGrid), typeof(ItemDrop.ItemData), typeof(Vector2i), typeof(InventoryGrid.Modifier)
-            }).GetValue(grid, item, pos, mod);
+            lastSingleDrop = drop;
+            lastSingleDropTime = drop != null ? Time.time : 0f;
         }
 
-        public static EffectList moveItemEffects(this InventoryGui instance)
+        static ItemDrop FindNewestNearbyDrop(ItemDrop.ItemData item, Vector3 origin)
         {
-            return Traverse.Create(instance).Field("m_moveItemEffects").GetValue<EffectList>();
+            if (item == null || item.m_shared == null)
+                return null;
+
+            var instances = GameAccess.ItemDropInstances();
+            if (instances == null)
+                return null;
+
+            ItemDrop best = null;
+            float bestSpawn = -1f;
+            string name = item.m_shared.m_name;
+
+            for (int i = 0, n = instances.Count; i < n; i++)
+            {
+                var drop = instances[i];
+                if (drop == null || drop.m_itemData == null || drop.m_itemData.m_shared == null)
+                    continue;
+                if (drop.m_itemData.m_shared.m_name != name)
+                    continue;
+                if ((drop.transform.position - origin).sqrMagnitude > SingleDropMergeRangeSq)
+                    continue;
+
+                float spawn = GameAccess.SpawnTime(drop);
+                if (spawn >= bestSpawn)
+                {
+                    bestSpawn = spawn;
+                    best = drop;
+                }
+            }
+
+            return best;
         }
 
-        public static GameObject dragGo(this InventoryGui instance)
+        static void SoftenDropPhysics(ItemDrop drop)
         {
-            return Traverse.Create(instance).Field("m_dragGo").GetValue<GameObject>();
-        }
+            if (drop == null)
+                return;
 
-        public static ItemDrop.ItemData dragItem(this InventoryGui instance)
-        {
-            return Traverse.Create(instance).Field("m_dragItem").GetValue<ItemDrop.ItemData>();
-        }
+            var body = drop.GetComponent<Rigidbody>();
+            if (body == null)
+                return;
 
-        public static Inventory dragInventory(this InventoryGui instance)
-        {
-            return Traverse.Create(instance).Field("m_dragInventory").GetValue<Inventory>();
-        }
-
-        public static int dragAmount(this InventoryGui instance)
-        {
-            return Traverse.Create(instance).Field("m_dragAmount").GetValue<int>();
-        }
-
-        public static Container currentContainer(this InventoryGui instance)
-        {
-            return Traverse.Create(instance).Field("m_currentContainer").GetValue<Container>();
-        }
-
-        public static InventoryGrid playerGrid(this InventoryGui instance)
-        {
-            return Traverse.Create(instance).Field("m_playerGrid").GetValue<InventoryGrid>();
-        }
-
-        public static InventoryGrid containerGrid(this InventoryGui instance)
-        {
-            return Traverse.Create(instance).Field("m_containerGrid").GetValue<InventoryGrid>();
+            Vector3 v = body.linearVelocity;
+            if (v.y > 1.25f)
+                v.y = 1.25f;
+            if (v.sqrMagnitude > 9f)
+                v = v.normalized * 3f;
+            body.linearVelocity = v;
         }
     }
 }

@@ -1,7 +1,5 @@
 using HarmonyLib;
-using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 
 namespace DropSingleItem.Patch
@@ -22,7 +20,7 @@ namespace DropSingleItem.Patch
                     codes[i] = new CodeInstruction(OpCodes.Ldc_I4_S, 0);
                 }
             }
-            return codes.AsEnumerable();
+            return codes;
         }
     }
 }

@@ -1,3 +1,15 @@
+# v1.2.5
+- Verified patch targets against current Valheim (Unity 6000.0.75, assembly_valheim from 2026-10-28)
+- Removed per-frame Harmony Traverse lookups; private game fields/methods are cached with AccessTools FieldRef/MethodDelegate
+- Default Mouse1 no longer patches InventoryGrid.UpdateInventory every inventory refresh
+- Inventory Update postfix returns immediately when nothing is dragged
+- Cached the use-item KeyCode instead of parsing the config string on every access
+- Reused a merge buffer and dropped LINQ on stack merge
+
+# v1.2.4
+- Verified against Valheim 1.0.16
+- Right-click drop-one no longer launches items: extra clicks add to the last pile instead of spawning overlapping rigidbodies, and the toss is capped
+
 # v1.2.3
 - Restored place-one / drop-one (1.2.2 merge hook on InventoryGrid.OnLeftDown could prevent the plugin from patching)
 

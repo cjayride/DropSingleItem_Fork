@@ -6,9 +6,12 @@ namespace DropSingleItem.Patch
     [HarmonyPatch(typeof(InventoryGui), "Update")]
     class InventoryGui_Update_DropSingleOutside
     {
-        public static void Postfix(InventoryGui __instance)
+        public static void Postfix(InventoryGui __instance, GameObject ___m_dragGo)
         {
-            if (!InventoryGui.IsVisible() || __instance.dragGo() == null)
+            if (___m_dragGo == null)
+                return;
+
+            if (!InventoryGui.IsVisible())
                 return;
 
             if (!ZInput.GetMouseButtonDown(1))

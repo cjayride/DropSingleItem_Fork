@@ -8,7 +8,7 @@ namespace DropSingleItem.Patch
     {
         public static bool Prefix(InventoryGui __instance, ref int ___m_dragAmount, InventoryGrid grid, ItemDrop.ItemData item, Vector2i pos)
         {
-            var is_dragging_item = __instance.dragGo() != null;
+            var is_dragging_item = GameAccess.DragGo(__instance) != null;
 
             var default_use_keycode = DropSingleItemMod.InventoryUseItemKeyCode == KeyCode.Mouse1;
             var shift_split = default_use_keycode && Utils.IsShiftHeld();
@@ -31,21 +31,21 @@ namespace DropSingleItem.Patch
                 return default_use_keycode;
             }
 
-            var dragItem = __instance.dragItem();
+            var dragItem = GameAccess.DragItem(__instance);
             if (!Utils.CanStackItem(dragItem, item))
             {
                 return false;
             }
 
-            var dragInventory = __instance.dragInventory();
-            var dragAmount = __instance.dragAmount();
+            var dragInventory = GameAccess.DragInventory(__instance);
+            var dragAmount = GameAccess.DragAmount(__instance);
             var dragStack = dragItem.m_stack;
 
             Utils.placingOneFromDrag = true;
             try
             {
                 ___m_dragAmount = 1;
-                __instance.OnSelectedItem(grid, item, pos, InventoryGrid.Modifier.Select);
+                GameAccess.OnSelectedItem(__instance, grid, item, pos, InventoryGrid.Modifier.Select);
             }
             finally
             {
@@ -55,22 +55,18 @@ namespace DropSingleItem.Patch
             dragAmount -= dragStack - dragItem.m_stack;
             if (dragAmount > 0 && dragItem != null && dragInventory != null && dragInventory.ContainsItem(dragItem))
             {
-                __instance.SetupDragItem(dragItem, dragInventory, dragAmount);
+                GameAccess.SetupDragItem(__instance, dragItem, dragInventory, dragAmount);
             }
             return false;
         }
     }
 
-    [HarmonyPatch(typeof(InventoryGrid), "UpdateInventory")]
     class InventoryGrid_UpdateInventory
     {
-        public static void Postfix(InventoryGrid __instance, Inventory inventory, Player player, ItemDrop.ItemData dragItem)
+        public static void Postfix(InventoryGrid __instance, Inventory inventory, ItemDrop.ItemData dragItem)
         {
-            var default_use_keycode = DropSingleItemMod.InventoryUseItemKeyCode == KeyCode.Mouse1;
-            if (default_use_keycode || dragItem != null)
-            {
+            if (dragItem != null)
                 return;
-            }
 
             if (ZInput.GetKeyDown(DropSingleItemMod.InventoryUseItemKeyCode, true))
             {
